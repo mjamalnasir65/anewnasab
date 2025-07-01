@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FamilyEcho Profile Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6 font-sans">
+
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
+  <h2 class="text-center text-2xl font-semibold mb-4">Me</h2>
+  <button onclick="uploadPhoto()" class="w-full py-2 mb-4 bg-blue-600 text-white rounded hover:bg-blue-700">Add my photo</button>
+
+  <div class="flex justify-around mb-4 border-b">
+    <div class="tab cursor-pointer pb-2 border-b-2 border-blue-600 text-blue-600" onclick="showTab('personal')">Personal</div>
+    <div class="tab cursor-pointer pb-2 text-gray-600" onclick="showTab('contact')">Contact</div>
+    <div class="tab cursor-pointer pb-2 text-gray-600" onclick="showTab('bio')">Biography</div>
+  </div>
+
+  <div id="personal" class="tab-content">
+    <div class="mb-4 space-y-1">
+      <p><strong>Full name:</strong> Jamal Nasir</p>
+      <p><strong>Gender:</strong> Male</p>
+      <p><strong>Birth date:</strong> 1965-06-29</p>
+      <p><strong>Tree stats:</strong> No ancestors, No descendants</p>
+    </div>
+    <button onclick="editDetails('personal')" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Edit my details</button>
+  </div>
+
+  <div id="contact" class="tab-content hidden">
+    <div class="mb-4 space-y-1">
+      <p><strong>Email:</strong> jamal@example.com</p>
+      <p><strong>Phone:</strong> +60123456789</p>
+    </div>
+    <button onclick="editDetails('contact')" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Edit contact</button>
+  </div>
+
+  <div id="bio" class="tab-content hidden">
+    <div class="mb-4 space-y-1">
+      <p><strong>Biography:</strong> Born in Kuala Lumpur, grew up surrounded by loving family.</p>
+    </div>
+    <button onclick="editDetails('bio')" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Edit biography</button>
+  </div>
+
+  <div class="mt-6 space-y-2">
+    <p>Click to add your relatives:</p>
+    <button onclick="addRelative('parents')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50">Add new parents</button>
+    <button onclick="addRelative('partner')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50">Add partner/ex</button>
+    <button onclick="addRelative('sibling')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50">Add brother/sister</button>
+    <button onclick="addRelative('child')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50">Add child</button>
+  </div>
+</div>
+
+<script>
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(el => {
+    el.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+    el.classList.add('text-gray-600');
+  });
+  document.querySelector('.tab[onclick*="' + tab + '"]').classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+  document.querySelector('.tab[onclick*="' + tab + '"]').classList.remove('text-gray-600');
+
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById(tab).classList.remove('hidden');
+}
+
+function editDetails(section) {
+  let html = '';
+  if(section === 'personal') {
+    html = `
+      <div class="space-y-4">
+        <div>
+          <label class="block mb-1 text-sm">Full Name</label>
+          <input type="text" value="Jamal Nasir" class="w-full border rounded px-3 py-2">
+        </div>
+        <div>
+          <label class="block mb-1 text-sm">Gender</label>
+          <select class="w-full border rounded px-3 py-2">
+            <option>Male</option><option>Female</option><option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-sm">Birth Date</label>
+          <input type="date" value="1965-06-29" class="w-full border rounded px-3 py-2">
+        </div>
+        <button class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-2">Save</button>
+      </div>
+    `;
+  }
+  if(section === 'contact') {
+    html = `
+      <div class="space-y-4">
+        <div>
+          <label class="block mb-1 text-sm">Email</label>
+          <input type="email" value="jamal@example.com" class="w-full border rounded px-3 py-2">
+        </div>
+        <div>
+          <label class="block mb-1 text-sm">Phone</label>
+          <input type="text" value="+60123456789" class="w-full border rounded px-3 py-2">
+        </div>
+        <button class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-2">Save</button>
+      </div>
+    `;
+  }
+  if(section === 'bio') {
+    html = `
+      <div class="space-y-4">
+        <div>
+          <label class="block mb-1 text-sm">Biography</label>
+          <textarea class="w-full border rounded px-3 py-2">Born in Kuala Lumpur, grew up surrounded by loving family.</textarea>
+        </div>
+        <button class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-2">Save</button>
+      </div>
+    `;
+  }
+  document.getElementById(section).innerHTML = html;
+}
+
+function addRelative(type) {
+  alert("Form to add: " + type);
+}
+function uploadPhoto() {
+  alert("File upload triggered!");
+}
+</script>
+
+</body>
+</html>

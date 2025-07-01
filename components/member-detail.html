@@ -1,0 +1,39 @@
+<div class="bg-white p-4 rounded-lg shadow-sm">
+  <h2 class="text-center text-xl font-semibold mb-4">Member Details</h2>
+  <button onclick="uploadPhoto()" class="w-full py-2 mb-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Change photo</button>
+  <div class="flex justify-around mb-4 border-b">
+    <div class="tab cursor-pointer pb-2 border-b-2 border-blue-600 text-blue-600 font-medium" onclick="showDetailTab('personal')">Personal</div>
+    <div class="tab cursor-pointer pb-2 text-gray-600 font-medium" onclick="showDetailTab('contact')">Contact</div>
+    <div class="tab cursor-pointer pb-2 text-gray-600 font-medium" onclick="showDetailTab('bio')">Biography</div>
+  </div>
+  <div id="personal" class="tab-content">
+    <div class="mb-4 space-y-1">
+      <p><strong>Full name:</strong> <span id="detail-full-name"></span></p>
+      <p><strong>Gender:</strong> <span id="detail-gender"></span></p>
+      <p><strong>Birth date:</strong> <span id="detail-birth-date"></span></p>
+      <p><strong>Death date:</strong> <span id="detail-death-date"></span></p>
+      <p><strong>Notes:</strong> <span id="detail-notes"></span></p>
+    </div>
+    <button onclick="editMemberDetail()" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Edit my details</button>
+  </div>
+  <div id="contact" class="tab-content hidden">
+    <div class="mb-4 space-y-1">
+      <p><strong>Email:</strong> <span id="detail-email"></span></p>
+      <p><strong>Phone:</strong> <span id="detail-phone"></span></p>
+    </div>
+    <button onclick="editMemberDetail()" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Edit contact</button>
+  </div>
+  <div id="bio" class="tab-content hidden">
+    <div class="mb-4 space-y-1">
+      <p><strong>Biography:</strong> <span id="detail-bio-notes"></span></p>
+    </div>
+    <button onclick="editMemberDetail()" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Edit biography</button>
+  </div>
+  <div class="mt-6 space-y-2">
+    <p class="text-sm text-gray-600">Click to add your relatives:</p>
+    <button onclick="addRelative('parents')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors">Add new parents</button>
+    <button onclick="addRelative('partner')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors">Add partner/ex</button>
+    <button onclick="addRelative('sibling')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors">Add brother/sister</button>
+    <button onclick="addRelative('child')" class="w-full py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors">Add child</button>
+  </div>
+</div> 

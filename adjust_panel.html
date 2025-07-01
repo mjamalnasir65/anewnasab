@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resizable Bottom Div</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-screen flex flex-col">
+
+  <!-- Top content -->
+  <div class="flex-1 bg-blue-100 p-4">
+    <h1 class="text-xl font-bold">My Family Tree</h1>
+    <p>Top content goes here.</p>
+  </div>
+
+  <!-- Handle -->
+  <div id="dragHandle" class="h-2 cursor-row-resize bg-gray-400"></div>
+
+  <!-- Bottom resizable div -->
+  <div id="bottomPanel" class="h-48 bg-green-100 p-4 overflow-auto">
+    <p>Resizable bottom panel content.</p>
+  </div>
+
+  <script>
+    const dragHandle = document.getElementById('dragHandle');
+    const bottomPanel = document.getElementById('bottomPanel');
+    let isDragging = false;
+    let startY = 0;
+    let startHeight = 0;
+
+    dragHandle.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startY = e.clientY;
+      startHeight = bottomPanel.offsetHeight;
+      document.body.style.cursor = 'row-resize';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dy = e.clientY - startY;
+      bottomPanel.style.height = `${startHeight - dy}px`;
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+  </script>
+</body>
+</html>

@@ -6,16 +6,17 @@
   <title>My Family Tree</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="assets/css/style.css">
+  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
 </head>
 <body class="bg-gray-50">
-  <!-- Landing Page -->
+  <!-- Landing Page (Login/Register) -->
   <div id="landing-page"></div>
 
-  <!-- App Root -->
-  <div id="app" class="hidden pt-14">
-
+  <!-- App Root (hidden by default) -->
+  <div id="app" class="hidden">
     <!-- Navbar -->
     <div class="fixed top-0 left-0 w-full h-14 bg-white border-b border-gray-200 z-50">
       <div class="flex items-center justify-center relative h-full">
@@ -23,35 +24,25 @@
         <div class="absolute right-0 top-0 h-full flex items-center pr-4" id="navbar-right"></div>
       </div>
     </div>
-
-    <!-- Form inside card -->
-    <div class="max-w-md mx-auto my-4 px-3">
-      <div class="bg-white rounded-lg shadow p-4">
-        <h2 class="text-center text-xl font-semibold mb-4">Add / Edit Family Member</h2>
-        <form class="space-y-3">
-        <div id="form-panel" class="w-full max-w-full min-h-screen box-border p-3 bg-gray-50 border-b border-gray-200 mt-14">
+    <!-- Form Panel -->
+    <div id="form-panel" class="w-full max-w-full min-h-screen box-border p-3 bg-gray-50 border-b border-gray-200 mt-14">
   <div class="bg-white p-4 rounded-lg shadow-sm">
     <h2 class="text-center text-xl font-semibold mb-4">Welcome to Your Family Tree</h2>
     <p class="text-center text-gray-600 mb-6">Start building your family tree by adding your first member</p>
     <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" onclick="showAddMemberForm()">Add First Member</button>
   </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Tree Viewer below the card -->
-    <div class="max-w-5xl mx-auto my-4 px-3">
-      <div class="bg-white rounded-lg shadow p-4 overflow-auto" style="min-height:400px;">
-        <h3 class="text-lg font-semibold mb-4">Family Tree Viewer</h3>
-        <div id="tree-container" class="relative min-w-[600px] min-h-[300px]">
-          <p class="text-center text-gray-600">Family tree will render here</p>
-          <!-- JS will populate tree here -->
+</div>
+  <div id="tree-container" class="w-full min-h-80 bg-white">
+    <!-- Page Content -->
+    <div class="pt-0">
+      <div id="tree-container" class="w-full min-h-80 bg-white">
+        <div class="p-4 text-center">
+          <p>Family tree will render here</p>
         </div>
       </div>
     </div>
-
   </div>
-
+  <!-- Custom JS -->
   <script src="assets/js/main.js"></script>
   <!-- Register Service Worker -->
   <script>

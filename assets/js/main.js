@@ -354,9 +354,10 @@ function showMemberDetail(memberId) {
 
 // Add parents for a member
 function addParents(childId, childName) {
-  console.log('addParents called with childId:', childId, 'childName:', childName);
+  console.log('[DEBUG] addParents called with childId:', childId, 'childName:', childName);
   const body = JSON.stringify({ child_id: childId });
-  console.log('Request body:', body);
+  console.log('[DEBUG] Request body:', body);
+
   fetch('api/member.php?action=add_parents', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -364,17 +365,23 @@ function addParents(childId, childName) {
   })
     .then(res => res.json())
     .then(data => {
+      console.log('[DEBUG] Response:', data);
       if (data.success) {
         fetchAndDisplayMembers();
         loadPanel('components/parent-form.html', () => {
           document.getElementById('parent-form-title').textContent = data.mother.full_name;
-          document.querySelectorAll('#parent-form-title-short, #parent-form-title-short-2, #parent-form-title-short-3, #parent-form-title-short-4, #parent-form-title-short-5').forEach(el => el.textContent = data.mother.full_name);
+          document.querySelectorAll('#parent-form-title-short, #parent-form-title-short-2, #parent-form-title-short-3, #parent-form-title-short-4, #parent-form-title-short-5')
+            .forEach(el => el.textContent = data.mother.full_name);
           document.getElementById('parent-full-name').textContent = data.mother.full_name;
           document.getElementById('parent-gender').textContent = 'Female';
         });
       } else {
+        console.error('[ERROR] API responded with failure:', data);
         alert(data.error || 'Failed to add parents.');
       }
     })
-    .catch(() => alert('Failed to add parents.'));
+    .catch(err => {
+      console.error('[ERROR] addParents failed:', err);
+      alert('Failed to add parents.');
+    });
 } 

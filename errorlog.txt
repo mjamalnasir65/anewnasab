@@ -1,0 +1,32 @@
+// (This file will be populated by your PHP log_message() function.)
+// You can view errors and debug messages here.
+[2025-07-03 07:20:20] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:21:00] Session check: no active session
+[2025-07-03 07:21:22] Login success: user 1 (jamal@email.com)
+[2025-07-03 07:21:22] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:24:25] Session check: no active session
+[2025-07-03 07:24:40] Login success: user 1 (jamal@email.com)
+[2025-07-03 07:24:40] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:25:19] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:27:24] Session check: no active session
+[2025-07-03 07:27:39] Login success: user 1 (jamal@email.com)
+[2025-07-03 07:27:39] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:29:59] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:33:40] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:37:01] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:37:58] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:47:32] Login success: user 1 (jamal@email.com)
+[2025-07-03 07:47:32] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:51:45] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:52:02] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:57:36] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 07:58:06] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 08:09:00] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 08:09:21] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 08:34:19] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 09:47:38] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 09:54:31] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 09:54:37] Login success: user 1 (jamal@email.com)
+[2025-07-03 09:54:37] Session check: user_id=1, email=jamal@email.com
+[2025-07-03 09:54:45] Login success: user 1 (jamal@email.com)
+[2025-07-03 09:54:45] Session check: user_id=1, email=jamal@email.com

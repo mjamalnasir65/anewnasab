@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jul 01, 2025 at 07:00 AM
+-- Generation Time: Jul 03, 2025 at 07:55 AM
 -- Server version: 8.3.0
 -- PHP Version: 8.2.18
 
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS `members` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `family_id` (`family_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `members`
@@ -90,7 +90,8 @@ CREATE TABLE IF NOT EXISTS `members` (
 
 INSERT INTO `members` (`id`, `family_id`, `full_name`, `gender`, `birth_date`, `death_date`, `notes`, `photo`, `created_at`) VALUES
 (1, 1, 'jamal', 'male', '1973-06-07', NULL, NULL, NULL, '2025-06-29 16:08:16'),
-(2, 1, 'nasir', 'male', '1931-07-01', '1933-07-05', NULL, NULL, '2025-06-30 23:19:55');
+(6, 1, 'Jonah', 'female', '1947-01-12', NULL, NULL, NULL, '2025-07-03 07:52:48'),
+(7, 1, 'nasir', 'male', '1937-01-09', NULL, NULL, NULL, '2025-07-03 07:53:15');
 
 -- --------------------------------------------------------
 

@@ -1,10 +1,28 @@
+// Debug flag and logger
+window.DEBUG = true;
+window.logDebug = function(...args) {
+  if (window.DEBUG) {
+    console.log('[DEBUG]', ...args);
+  }
+};
+window.logError = function(...args) {
+  if (window.DEBUG) {
+    console.error('[ERROR]', ...args);
+  }
+};
+
 // Show login form by default on page load
 window.onload = function() {
   checkSession();
 };
 
 function showLoginForm(message = '') {
-  document.getElementById('landing-page').innerHTML = `
+  const landingPage = document.getElementById('landing-page');
+  if (!landingPage) {
+    logError('#landing-page not found!');
+    return;
+  }
+  landingPage.innerHTML = `
     <div class="max-w-md mx-auto mt-10 p-6">
       <h2 class="text-2xl font-bold text-center mb-6">Login</h2>
       ${message ? `<div class='text-red-500 text-center mb-4'>${message}</div>` : ''}
@@ -59,8 +77,11 @@ function forgotPassword() {
 }
 
 function showAppUI() {
-  document.getElementById('landing-page').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
+  logDebug('showAppUI called');
+  const landingPage = document.getElementById('landing-page');
+  const app = document.getElementById('app');
+  if (landingPage) landingPage.classList.add('hidden');
+  if (app) app.classList.remove('hidden');
   let navbarRight = document.getElementById('navbar-right');
   if (!document.getElementById('logout-btn')) {
     let logoutBtn = document.createElement('button');
@@ -74,26 +95,41 @@ function showAppUI() {
 }
 
 function hideAppUI() {
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('landing-page').classList.remove('hidden');
+  const app = document.getElementById('app');
+  const landingPage = document.getElementById('landing-page');
+  if (app) app.classList.add('hidden');
+  if (landingPage) landingPage.classList.remove('hidden');
   let logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.remove();
 }
 
 // Check if members exist and show tree or welcome panel
 function checkAndShowTreeOrWelcome() {
-  fetch('api/member.php')
+  logDebug('checkAndShowTreeOrWelcome called');
+  fetch('api/member.php?action=tree')
     .then(res => res.json())
     .then(data => {
+      logDebug('Tree API response:', data);
       if (data.success && data.members && data.members.length > 0) {
+        logDebug('Members found, showing app UI');
         showAppUI();
-        renderMemberList(data.members);
+        renderFamilyTree(data.members);
+        // Hide welcome panel if present
+        const formPanel = document.getElementById('form-panel');
+        if (formPanel) {
+          // Only clear if it contains the welcome panel
+          if (formPanel.innerHTML.includes('Welcome to Your Family Tree')) {
+            formPanel.innerHTML = '';
+          }
+        }
       } else {
+        logDebug('No members found, showing welcome panel');
         hideAppUI();
         showWelcomePanel();
       }
     })
-    .catch(() => {
+    .catch((err) => {
+      logError('Tree API failed:', err);
       hideAppUI();
       showWelcomePanel();
     });
@@ -104,14 +140,18 @@ function checkSession() {
   fetch('api/session.php')
     .then(res => res.json())
     .then(data => {
+      logDebug('Session check result:', data);
       if (data.success) {
+        logDebug('Session valid, calling checkAndShowTreeOrWelcome');
         checkAndShowTreeOrWelcome();
       } else {
+        logDebug('Session invalid, showing login form');
         hideAppUI();
         showLoginForm();
       }
     })
-    .catch(() => {
+    .catch((err) => {
+      logError('Session check failed:', err);
       hideAppUI();
       showLoginForm();
     });
@@ -275,113 +315,196 @@ function showSummaryTab(tab) {
 }
 
 function addRelative(type) {
-  if (type === 'parents' && window.currentMember) {
+  if (!window.currentMember) {
+    alert('No member selected.');
+    return;
+  }
+  window.relationshipContext.memberId = window.currentMember.id;
+  window.relationshipContext.relationshipType = type;
+
+  if (type === 'parents') {
     addParents(window.currentMember.id, window.currentMember.full_name);
+  } else if (type === 'partner') {
+    showAddPartnerForm(window.currentMember.id, window.currentMember.full_name);
+  } else if (type === 'sibling') {
+    showAddSiblingForm(window.currentMember.id, window.currentMember.full_name);
+  } else if (type === 'child') {
+    showAddChildForm(window.currentMember.id, window.currentMember.full_name);
   } else {
     alert('Feature coming soon!');
   }
 }
 
-function fetchAndDisplayMembers() {
-  fetch('api/member.php')
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        renderMemberList(data.members);
-      } else {
-        document.getElementById('tree-container').innerHTML = '<div class="p-4 text-center"><p>No members found.</p></div>';
-      }
-    })
-    .catch(() => {
-      document.getElementById('tree-container').innerHTML = '<div class="p-4 text-center"><p>Failed to load members.</p></div>';
-    });
+// Example: Add Partner Form (implement similar for sibling/child)
+function showAddPartnerForm(memberId, memberName) {
+  document.getElementById('form-panel').innerHTML = `
+    <div class="bg-white p-4 rounded-lg shadow-sm">
+      <h2 class="text-xl font-semibold mb-4">Add Partner for ${memberName}</h2>
+      <div class="mb-4">
+        <label class="block mb-1">Full Name</label>
+        <input type="text" id="partner-full-name" class="w-full border px-2 py-1 rounded" />
+      </div>
+      <div class="mb-4">
+        <label class="block mb-1">Gender</label>
+        <select id="partner-gender" class="w-full border px-2 py-1 rounded">
+          <option value="">Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label class="block mb-1">Birth Date</label>
+        <input type="date" id="partner-birth-date" class="w-full border px-2 py-1 rounded" />
+      </div>
+      <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="submitAddPartner()">Add Partner</button>
+      <button class="ml-2 px-4 py-2 rounded border" onclick="fetchAndDisplayMembers()">Cancel</button>
+    </div>
+  `;
 }
 
-// Render member list as clickable nodes
-function renderMemberList(members) {
-  if (!members || members.length === 0) {
-    document.getElementById('tree-container').innerHTML = '<div class="p-4 text-center"><p>No members found.</p></div>';
+window.submitAddPartner = function() {
+  const full_name = document.getElementById('partner-full-name').value.trim();
+  const gender = document.getElementById('partner-gender').value;
+  const birth_date = document.getElementById('partner-birth-date').value;
+  const memberId = window.relationshipContext.memberId;
+
+  if (!full_name || !gender || !birth_date) {
+    alert('Full name, gender, and birth date are required');
     return;
   }
-  let html = '<div class="p-4"><h3 class="text-lg font-bold mb-4">Family Members</h3><ul class="space-y-3">';
-  members.forEach(member => {
-    html += `<li class="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50" onclick="showMemberDetail(${member.id})"><strong>${member.full_name}</strong> (${member.gender}, ${member.birth_date}${member.death_date ? ' - ' + member.death_date : ''})</li>`;
+
+  const body = JSON.stringify({
+    member_id: memberId,
+    full_name,
+    gender,
+    birth_date
   });
-  html += '</ul></div>';
-  document.getElementById('tree-container').innerHTML = html;
-}
 
-// Show member detail in form panel
-function showMemberDetail(memberId) {
-  // Fetch member data from API
-  fetch(`api/member.php?id=${memberId}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.success && data.member) {
-        window.currentMember = data.member;
-        loadPanel('components/member-detail.html', () => {
-          // Fill in the member data
-          const m = data.member;
-          document.getElementById('detail-full-name').textContent = m.full_name || '';
-          document.getElementById('detail-gender').textContent = m.gender || '';
-          document.getElementById('detail-birth-date').textContent = m.birth_date || '';
-          document.getElementById('detail-death-date').textContent = m.death_date || '-';
-          document.getElementById('detail-notes').textContent = m.notes || '-';
-          document.getElementById('detail-email').textContent = m.email || '-';
-          document.getElementById('detail-phone').textContent = m.phone || '-';
-          document.getElementById('detail-bio-notes').textContent = m.bio_notes || '-';
-          // Tab logic
-          window.showDetailTab = function(tab) {
-            document.querySelectorAll('.tab').forEach(el => {
-              el.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
-              el.classList.add('text-gray-600');
-            });
-            document.querySelector('.tab[onclick*="' + tab + '"]').classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
-            document.querySelector('.tab[onclick*="' + tab + '"]').classList.remove('text-gray-600');
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(tab).classList.remove('hidden');
-          };
-          window.showDetailTab('personal');
-          window.uploadPhoto = function() { alert('Photo upload feature coming soon!'); };
-          window.editMemberDetail = function() { showAddMemberForm(m); };
-        });
-      } else {
-        alert('Member not found.');
-      }
-    })
-    .catch(() => alert('Failed to load member details.'));
-}
+  logDebug('Submitting partner:', body);
 
-// Add parents for a member
-function addParents(childId, childName) {
-  console.log('[DEBUG] addParents called with childId:', childId, 'childName:', childName);
-  const body = JSON.stringify({ child_id: childId });
-  console.log('[DEBUG] Request body:', body);
-
-  fetch('api/member.php?action=add_parents', {
+  fetch('api/member.php?action=add_partner', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body
   })
     .then(res => res.json())
     .then(data => {
-      console.log('[DEBUG] Response:', data);
+      logDebug('Response:', data);
       if (data.success) {
         fetchAndDisplayMembers();
-        loadPanel('components/parent-form.html', () => {
-          document.getElementById('parent-form-title').textContent = data.mother.full_name;
-          document.querySelectorAll('#parent-form-title-short, #parent-form-title-short-2, #parent-form-title-short-3, #parent-form-title-short-4, #parent-form-title-short-5')
-            .forEach(el => el.textContent = data.mother.full_name);
-          document.getElementById('parent-full-name').textContent = data.mother.full_name;
-          document.getElementById('parent-gender').textContent = 'Female';
-        });
       } else {
-        console.error('[ERROR] API responded with failure:', data);
-        alert(data.error || 'Failed to add parents.');
+        logError('API responded with failure:', data);
+        alert(data.error || 'Failed to add partner.');
       }
     })
     .catch(err => {
-      console.error('[ERROR] addParents failed:', err);
-      alert('Failed to add parents.');
+      logError('addPartner failed:', err);
+      alert('Failed to add partner.');
     });
-} 
+};
+
+// Repeat similar for sibling and child forms/actions
+
+// Global context for relationship actions
+window.relationshipContext = {
+  memberId: null,
+  relationshipType: null
+};
+
+// When user clicks a node, set the context
+function showMemberDetail(memberId) {
+  window.relationshipContext.memberId = memberId;
+  // ...existing code...
+}
+
+// Add relative actions set the context and open the form
+function addRelative(type) {
+  if (!window.currentMember) {
+    alert('No member selected.');
+    return;
+  }
+  window.relationshipContext.memberId = window.currentMember.id;
+  window.relationshipContext.relationshipType = type;
+
+  if (type === 'parents') {
+    addParents(window.currentMember.id, window.currentMember.full_name);
+  } else if (type === 'partner') {
+    showAddPartnerForm(window.currentMember.id, window.currentMember.full_name);
+  } else if (type === 'sibling') {
+    showAddSiblingForm(window.currentMember.id, window.currentMember.full_name);
+  } else if (type === 'child') {
+    showAddChildForm(window.currentMember.id, window.currentMember.full_name);
+  } else {
+    alert('Feature coming soon!');
+  }
+}
+
+// Example: Add Partner Form (implement similar for sibling/child)
+function showAddPartnerForm(memberId, memberName) {
+  document.getElementById('form-panel').innerHTML = `
+    <div class="bg-white p-4 rounded-lg shadow-sm">
+      <h2 class="text-xl font-semibold mb-4">Add Partner for ${memberName}</h2>
+      <div class="mb-4">
+        <label class="block mb-1">Full Name</label>
+        <input type="text" id="partner-full-name" class="w-full border px-2 py-1 rounded" />
+      </div>
+      <div class="mb-4">
+        <label class="block mb-1">Gender</label>
+        <select id="partner-gender" class="w-full border px-2 py-1 rounded">
+          <option value="">Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label class="block mb-1">Birth Date</label>
+        <input type="date" id="partner-birth-date" class="w-full border px-2 py-1 rounded" />
+      </div>
+      <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="submitAddPartner()">Add Partner</button>
+      <button class="ml-2 px-4 py-2 rounded border" onclick="fetchAndDisplayMembers()">Cancel</button>
+    </div>
+  `;
+}
+
+window.submitAddPartner = function() {
+  const full_name = document.getElementById('partner-full-name').value.trim();
+  const gender = document.getElementById('partner-gender').value;
+  const birth_date = document.getElementById('partner-birth-date').value;
+  const memberId = window.relationshipContext.memberId;
+
+  if (!full_name || !gender || !birth_date) {
+    alert('Full name, gender, and birth date are required');
+    return;
+  }
+
+  const body = JSON.stringify({
+    member_id: memberId,
+    full_name,
+    gender,
+    birth_date
+  });
+
+  logDebug('Submitting partner:', body);
+
+  fetch('api/member.php?action=add_partner', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body
+  })
+    .then(res => res.json())
+    .then(data => {
+      logDebug('Response:', data);
+      if (data.success) {
+        fetchAndDisplayMembers();
+      } else {
+        logError('API responded with failure:', data);
+        alert(data.error || 'Failed to add partner.');
+      }
+    })
+    .catch(err => {
+      logError('addPartner failed:', err);
+      alert('Failed to add partner.');
+    });
+};
+
+// Repeat similar for sibling and child forms/actions

@@ -2,6 +2,12 @@
 header('Content-Type: application/json');
 session_start();
 
+// Logger function
+function log_message($msg) {
+    $logfile = __DIR__ . '/../errorlog.txt';
+    file_put_contents($logfile, "[".date('Y-m-d H:i:s')."] $msg\n", FILE_APPEND);
+}
+
 // DB connection
 $conn = new mysqli('localhost', 'root', '', 'anewnasab');
 if ($conn->connect_error) {
@@ -114,54 +120,401 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'add_parents') {
-    // Debug: log the raw input and parsed data
-    $raw_input = file_get_contents('php://input');
-    file_put_contents(__DIR__ . '/debug_add_parents.log', "RAW INPUT:\n" . $raw_input . "\n", FILE_APPEND);
-    $data = json_decode($raw_input, true);
-    file_put_contents(__DIR__ . '/debug_add_parents.log', "PARSED DATA:\n" . print_r($data, true) . "\n", FILE_APPEND);
-    $child_id = isset($data['child_id']) ? intval($data['child_id']) : 0;
-    if (!$child_id) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Missing child_id']);
+    $input = json_decode(file_get_contents('php://input'), true);
+    $child_id = intval($input['child_id']);
+    $full_name = trim($input['full_name'] ?? '');
+    $gender = trim($input['gender'] ?? '');
+    $birth_date = trim($input['birth_date'] ?? '');
+
+    log_message("add_parents called: child_id=$child_id, full_name=$full_name, gender=$gender, birth_date=$birth_date");
+
+    if (!$child_id || !$full_name || !$gender || !$birth_date) {
+        log_message("add_parents error: missing required fields");
+        echo json_encode(['success' => false, 'error' => 'Full name, gender, and birth date are required']);
         exit;
     }
-    // Get child's name for default parent names
-    $stmt = $conn->prepare('SELECT full_name FROM members WHERE id = ? AND family_id = ?');
-    $stmt->bind_param('ii', $child_id, $family_id);
+
+    // Get family_id of the child
+    $stmt = $conn->prepare('SELECT family_id FROM members WHERE id = ?');
+    if (!$stmt) {
+        log_message("add_parents error: prepare failed for SELECT family_id: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('i', $child_id);
     $stmt->execute();
-    $stmt->bind_result($child_name);
-    $stmt->fetch();
-    $stmt->close();
-    if (!$child_name) {
-        http_response_code(404);
+    $stmt->bind_result($family_id);
+    if (!$stmt->fetch()) {
+        log_message("add_parents error: child not found for id $child_id");
         echo json_encode(['success' => false, 'error' => 'Child not found']);
+        $stmt->close();
         exit;
     }
-    // Create mother
-    $mother_name = 'Mother of ' . $child_name;
-    $stmt = $conn->prepare('INSERT INTO members (family_id, full_name, gender) VALUES (?, ?, ?)');
-    $gender_female = 'female';
-    $stmt->bind_param('iss', $family_id, $mother_name, $gender_female);
-    $stmt->execute();
-    $mother_id = $stmt->insert_id;
-    // Create father
-    $father_name = 'Father of ' . $child_name;
-    $gender_male = 'male';
-    $stmt->bind_param('iss', $family_id, $father_name, $gender_male);
-    $stmt->execute();
-    $father_id = $stmt->insert_id;
     $stmt->close();
-    // Add relationships (parent -> child)
-    $rel_type = 'parent';
-    $stmt = $conn->prepare('INSERT INTO relationships (family_id, member_id, related_member_id, relationship_type) VALUES (?, ?, ?, ?), (?, ?, ?, ?)');
-    $stmt->bind_param('iiisiiis', $family_id, $mother_id, $child_id, $rel_type, $family_id, $father_id, $child_id, $rel_type);
-    $stmt->execute();
+
+    // Insert parent member
+    $stmt = $conn->prepare('INSERT INTO members (family_id, full_name, gender, birth_date) VALUES (?, ?, ?, ?)');
+    if (!$stmt) {
+        log_message("add_parents error: prepare failed for INSERT member: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('isss', $family_id, $full_name, $gender, $birth_date);
+    if (!$stmt->execute()) {
+        log_message("add_parents error: execute failed for INSERT member: " . $stmt->error);
+        echo json_encode(['success' => false, 'error' => 'Failed to add parent']);
+        $stmt->close();
+        exit;
+    }
+    $parent_id = $stmt->insert_id;
+    log_message("add_parents: parent inserted with id $parent_id");
     $stmt->close();
-    // Return new parent data
-    $mother = [ 'id' => $mother_id, 'full_name' => $mother_name, 'gender' => 'female' ];
-    $father = [ 'id' => $father_id, 'full_name' => $father_name, 'gender' => 'male' ];
-    echo json_encode(['success' => true, 'mother' => $mother, 'father' => $father]);
+
+    // Log all IDs before insert
+    log_message("add_parents: Insert relationship with family_id=$family_id, parent_id=$parent_id, child_id=$child_id");
+
+    // Insert relationship: parent -> child
+    $stmt = $conn->prepare('INSERT INTO relationships (family_id, member_id, related_member_id, relationship_type) VALUES (?, ?, ?, "parent")');
+    if (!$stmt) {
+        log_message("add_parents error: prepare failed for INSERT relationship: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('iii', $family_id, $parent_id, $child_id);
+    if (!$stmt->execute()) {
+        log_message("add_parents error: execute failed for INSERT relationship: " . $stmt->error . " | SQLSTATE: " . $stmt->sqlstate);
+        echo json_encode(['success' => false, 'error' => 'Failed to add relationship']);
+        $stmt->close();
+        exit;
+    }
+    log_message("add_parents: relationship inserted parent_id=$parent_id, child_id=$child_id");
+    $stmt->close();
+
+    // Optionally, fetch the new parent member to return
+    $stmt = $conn->prepare('SELECT id, full_name, gender, birth_date FROM members WHERE id = ?');
+    $stmt->bind_param('i', $parent_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $parent = $result->fetch_assoc();
+    $stmt->close();
+
+    log_message("add_parents: success for parent_id=$parent_id, child_id=$child_id");
+    echo json_encode(['success' => true, 'member' => $parent]);
+    exit;
+}
+
+// Get family tree with relationships
+if ($method === 'GET' && isset($_GET['action']) && $_GET['action'] === 'tree') {
+    // Get all members with their relationships
+    $stmt = $conn->prepare('
+        SELECT 
+            m.id, m.full_name, m.gender, m.birth_date, m.death_date, m.notes,
+            r.relationship_type, r.related_member_id
+        FROM members m
+        LEFT JOIN relationships r ON m.id = r.member_id
+        WHERE m.family_id = ?
+        ORDER BY m.id ASC
+    ');
+    $stmt->bind_param('i', $family_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $members = [];
+    $relationships = [];
+    
+    while ($row = $result->fetch_assoc()) {
+        $member_id = $row['id'];
+        
+        // Add member if not already added
+        if (!isset($members[$member_id])) {
+            $members[$member_id] = [
+                'id' => $member_id,
+                'full_name' => $row['full_name'],
+                'gender' => $row['gender'],
+                'birth_date' => $row['birth_date'],
+                'death_date' => $row['death_date'],
+                'notes' => $row['notes'],
+                'parents' => [],
+                'children' => []
+            ];
+        }
+        
+        // Add relationship if exists
+        if ($row['relationship_type'] && $row['related_member_id']) {
+            $relationships[] = [
+                'member_id' => $member_id,
+                'related_member_id' => $row['related_member_id'],
+                'relationship_type' => $row['relationship_type']
+            ];
+        }
+    }
+    $stmt->close();
+    
+    // Process relationships to build family structure
+    foreach ($relationships as $rel) {
+        if ($rel['relationship_type'] === 'parent') {
+            $parent_id = $rel['member_id'];
+            $child_id = $rel['related_member_id'];
+            
+            if (isset($members[$parent_id]) && isset($members[$child_id])) {
+                $members[$child_id]['parents'][] = $parent_id;
+                $members[$parent_id]['children'][] = $child_id;
+            }
+        }
+    }
+    
+    echo json_encode([
+        'success' => true, 
+        'members' => array_values($members),
+        'relationships' => $relationships
+    ]);
     $conn->close();
+    exit;
+}
+
+// Add Partner
+if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'add_partner') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $member_id = intval($input['member_id']);
+    $full_name = trim($input['full_name'] ?? '');
+    $gender = trim($input['gender'] ?? '');
+    $birth_date = trim($input['birth_date'] ?? '');
+
+    log_message("add_partner called: member_id=$member_id, full_name=$full_name, gender=$gender, birth_date=$birth_date");
+
+    if (!$member_id || !$full_name || !$gender || !$birth_date) {
+        log_message("add_partner error: missing required fields");
+        echo json_encode(['success' => false, 'error' => 'Full name, gender, and birth date are required']);
+        exit;
+    }
+
+    // Get family_id of the member
+    $stmt = $conn->prepare('SELECT family_id FROM members WHERE id = ?');
+    if (!$stmt) {
+        log_message("add_partner error: prepare failed for SELECT family_id: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('i', $member_id);
+    $stmt->execute();
+    $stmt->bind_result($family_id);
+    if (!$stmt->fetch()) {
+        log_message("add_partner error: member not found for id $member_id");
+        echo json_encode(['success' => false, 'error' => 'Member not found']);
+        $stmt->close();
+        exit;
+    }
+    $stmt->close();
+
+    // Insert partner member
+    $stmt = $conn->prepare('INSERT INTO members (family_id, full_name, gender, birth_date) VALUES (?, ?, ?, ?)');
+    if (!$stmt) {
+        log_message("add_partner error: prepare failed for INSERT member: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('isss', $family_id, $full_name, $gender, $birth_date);
+    if (!$stmt->execute()) {
+        log_message("add_partner error: execute failed for INSERT member: " . $stmt->error);
+        echo json_encode(['success' => false, 'error' => 'Failed to add partner']);
+        $stmt->close();
+        exit;
+    }
+    $partner_id = $stmt->insert_id;
+    log_message("add_partner: partner inserted with id $partner_id");
+    $stmt->close();
+
+    // Insert relationship: partner <-> member (bidirectional)
+    $stmt = $conn->prepare('INSERT INTO relationships (family_id, member_id, related_member_id, relationship_type) VALUES (?, ?, ?, "partner"), (?, ?, ?, "partner")');
+    if (!$stmt) {
+        log_message("add_partner error: prepare failed for INSERT relationship: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('iiiiii', $family_id, $partner_id, $member_id, $family_id, $member_id, $partner_id);
+    if (!$stmt->execute()) {
+        log_message("add_partner error: execute failed for INSERT relationship: " . $stmt->error . " | SQLSTATE: " . $stmt->sqlstate);
+        echo json_encode(['success' => false, 'error' => 'Failed to add relationship']);
+        $stmt->close();
+        exit;
+    }
+    log_message("add_partner: relationship inserted partner_id=$partner_id, member_id=$member_id");
+    $stmt->close();
+
+    // Optionally, fetch the new partner member to return
+    $stmt = $conn->prepare('SELECT id, full_name, gender, birth_date FROM members WHERE id = ?');
+    $stmt->bind_param('i', $partner_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $partner = $result->fetch_assoc();
+    $stmt->close();
+
+    log_message("add_partner: success for partner_id=$partner_id, member_id=$member_id");
+    echo json_encode(['success' => true, 'member' => $partner]);
+    exit;
+}
+
+// Add Sibling
+if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'add_sibling') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $member_id = intval($input['member_id']);
+    $full_name = trim($input['full_name'] ?? '');
+    $gender = trim($input['gender'] ?? '');
+    $birth_date = trim($input['birth_date'] ?? '');
+
+    log_message("add_sibling called: member_id=$member_id, full_name=$full_name, gender=$gender, birth_date=$birth_date");
+
+    if (!$member_id || !$full_name || !$gender || !$birth_date) {
+        log_message("add_sibling error: missing required fields");
+        echo json_encode(['success' => false, 'error' => 'Full name, gender, and birth date are required']);
+        exit;
+    }
+
+    // Get family_id of the member
+    $stmt = $conn->prepare('SELECT family_id FROM members WHERE id = ?');
+    if (!$stmt) {
+        log_message("add_sibling error: prepare failed for SELECT family_id: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('i', $member_id);
+    $stmt->execute();
+    $stmt->bind_result($family_id);
+    if (!$stmt->fetch()) {
+        log_message("add_sibling error: member not found for id $member_id");
+        echo json_encode(['success' => false, 'error' => 'Member not found']);
+        $stmt->close();
+        exit;
+    }
+    $stmt->close();
+
+    // Insert sibling member
+    $stmt = $conn->prepare('INSERT INTO members (family_id, full_name, gender, birth_date) VALUES (?, ?, ?, ?)');
+    if (!$stmt) {
+        log_message("add_sibling error: prepare failed for INSERT member: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('isss', $family_id, $full_name, $gender, $birth_date);
+    if (!$stmt->execute()) {
+        log_message("add_sibling error: execute failed for INSERT member: " . $stmt->error);
+        echo json_encode(['success' => false, 'error' => 'Failed to add sibling']);
+        $stmt->close();
+        exit;
+    }
+    $sibling_id = $stmt->insert_id;
+    log_message("add_sibling: sibling inserted with id $sibling_id");
+    $stmt->close();
+
+    // Insert relationship: sibling <-> member (bidirectional)
+    $stmt = $conn->prepare('INSERT INTO relationships (family_id, member_id, related_member_id, relationship_type) VALUES (?, ?, ?, "sibling"), (?, ?, ?, "sibling")');
+    if (!$stmt) {
+        log_message("add_sibling error: prepare failed for INSERT relationship: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('iiiiii', $family_id, $sibling_id, $member_id, $family_id, $member_id, $sibling_id);
+    if (!$stmt->execute()) {
+        log_message("add_sibling error: execute failed for INSERT relationship: " . $stmt->error . " | SQLSTATE: " . $stmt->sqlstate);
+        echo json_encode(['success' => false, 'error' => 'Failed to add relationship']);
+        $stmt->close();
+        exit;
+    }
+    log_message("add_sibling: relationship inserted sibling_id=$sibling_id, member_id=$member_id");
+    $stmt->close();
+
+    // Optionally, fetch the new sibling member to return
+    $stmt = $conn->prepare('SELECT id, full_name, gender, birth_date FROM members WHERE id = ?');
+    $stmt->bind_param('i', $sibling_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $sibling = $result->fetch_assoc();
+    $stmt->close();
+
+    log_message("add_sibling: success for sibling_id=$sibling_id, member_id=$member_id");
+    echo json_encode(['success' => true, 'member' => $sibling]);
+    exit;
+}
+
+// Add Child
+if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'add_child') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $member_id = intval($input['member_id']);
+    $full_name = trim($input['full_name'] ?? '');
+    $gender = trim($input['gender'] ?? '');
+    $birth_date = trim($input['birth_date'] ?? '');
+
+    log_message("add_child called: member_id=$member_id, full_name=$full_name, gender=$gender, birth_date=$birth_date");
+
+    if (!$member_id || !$full_name || !$gender || !$birth_date) {
+        log_message("add_child error: missing required fields");
+        echo json_encode(['success' => false, 'error' => 'Full name, gender, and birth date are required']);
+        exit;
+    }
+
+    // Get family_id of the member
+    $stmt = $conn->prepare('SELECT family_id FROM members WHERE id = ?');
+    if (!$stmt) {
+        log_message("add_child error: prepare failed for SELECT family_id: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('i', $member_id);
+    $stmt->execute();
+    $stmt->bind_result($family_id);
+    if (!$stmt->fetch()) {
+        log_message("add_child error: member not found for id $member_id");
+        echo json_encode(['success' => false, 'error' => 'Member not found']);
+        $stmt->close();
+        exit;
+    }
+    $stmt->close();
+
+    // Insert child member
+    $stmt = $conn->prepare('INSERT INTO members (family_id, full_name, gender, birth_date) VALUES (?, ?, ?, ?)');
+    if (!$stmt) {
+        log_message("add_child error: prepare failed for INSERT member: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('isss', $family_id, $full_name, $gender, $birth_date);
+    if (!$stmt->execute()) {
+        log_message("add_child error: execute failed for INSERT member: " . $stmt->error);
+        echo json_encode(['success' => false, 'error' => 'Failed to add child']);
+        $stmt->close();
+        exit;
+    }
+    $child_id = $stmt->insert_id;
+    log_message("add_child: child inserted with id $child_id");
+    $stmt->close();
+
+    // Insert relationship: parent -> child
+    $stmt = $conn->prepare('INSERT INTO relationships (family_id, member_id, related_member_id, relationship_type) VALUES (?, ?, ?, "parent")');
+    if (!$stmt) {
+        log_message("add_child error: prepare failed for INSERT relationship: " . $conn->error);
+        echo json_encode(['success' => false, 'error' => 'DB error']);
+        exit;
+    }
+    $stmt->bind_param('iii', $family_id, $member_id, $child_id);
+    if (!$stmt->execute()) {
+        log_message("add_child error: execute failed for INSERT relationship: " . $stmt->error . " | SQLSTATE: " . $stmt->sqlstate);
+        echo json_encode(['success' => false, 'error' => 'Failed to add relationship']);
+        $stmt->close();
+        exit;
+    }
+    log_message("add_child: relationship inserted parent_id=$member_id, child_id=$child_id");
+    $stmt->close();
+
+    // Optionally, fetch the new child member to return
+    $stmt = $conn->prepare('SELECT id, full_name, gender, birth_date FROM members WHERE id = ?');
+    $stmt->bind_param('i', $child_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $child = $result->fetch_assoc();
+    $stmt->close();
+
+    log_message("add_child: success for parent_id=$member_id, child_id=$child_id");
+    echo json_encode(['success' => true, 'member' => $child]);
     exit;
 }
 
@@ -170,4 +523,4 @@ http_response_code(405);
 echo json_encode(['success' => false, 'error' => 'Method not allowed']);
 if ($conn && $conn->connect_errno === 0) {
     $conn->close();
-} 
+}

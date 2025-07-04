@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>My Family Tree</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS (local build) -->
+  <link href="assets/css/output.css" rel="stylesheet">
   <link rel="manifest" href="manifest.json" />
 </head>
 <body class="bg-gray-50">

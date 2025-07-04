@@ -1,0 +1,45 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.7.0
+2 info using node@v22.2.0
+3 silly config:load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config:load:file:D:\wamp64\www\anewnasab\.npmrc
+5 silly config:load:file:C:\Users\Jamal\.npmrc
+6 silly config:load:file:C:\Users\Jamal\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install tailwindcss postcss autoprefixer
+8 verbose argv "install" "--save-dev" "tailwindcss" "postcss" "autoprefixer"
+9 verbose logfile logs-max:10 dir:C:\Users\Jamal\AppData\Local\npm-cache\_logs\2025-07-04T05_33_37_316Z-
+10 verbose logfile C:\Users\Jamal\AppData\Local\npm-cache\_logs\2025-07-04T05_33_37_316Z-debug-0.log
+11 silly logfile start cleaning logs, removing 2 files
+12 silly logfile done cleaning log files
+13 silly idealTree buildDeps
+14 silly fetch manifest autoprefixer@^10.4.21
+15 http fetch GET 200 https://registry.npmjs.org/autoprefixer 211ms (cache revalidated)
+16 silly fetch manifest postcss@^8.5.6
+17 http fetch GET 200 https://registry.npmjs.org/postcss 47ms (cache revalidated)
+18 silly fetch manifest tailwindcss@^4.1.11
+19 http fetch GET 200 https://registry.npmjs.org/tailwindcss 65ms (cache revalidated)
+20 silly placeDep ROOT autoprefixer@10.4.21 REPLACE for: anewnasab@1.0.0 want: ^10.4.21
+21 silly placeDep ROOT postcss@8.5.6 REPLACE for: anewnasab@1.0.0 want: ^8.5.6
+22 silly placeDep ROOT tailwindcss@4.1.11 REPLACE for: anewnasab@1.0.0 want: ^4.1.11
+23 silly reify moves {}
+24 silly audit bulk request {
+24 silly audit   browserslist: [ '4.25.1' ],
+24 silly audit   'caniuse-lite': [ '1.0.30001726' ],
+24 silly audit   'electron-to-chromium': [ '1.5.179' ],
+24 silly audit   escalade: [ '3.2.0' ],
+24 silly audit   'fraction.js': [ '4.3.7' ],
+24 silly audit   nanoid: [ '3.3.11' ],
+24 silly audit   'node-releases': [ '2.0.19' ],
+24 silly audit   'normalize-range': [ '0.1.2' ],
+24 silly audit   picocolors: [ '1.1.1' ],
+24 silly audit   'postcss-value-parser': [ '4.2.0' ],
+24 silly audit   'source-map-js': [ '1.2.1' ],
+24 silly audit   'update-browserslist-db': [ '1.1.3' ],
+24 silly audit   autoprefixer: [ '10.4.21' ],
+24 silly audit   postcss: [ '8.5.6' ],
+24 silly audit   tailwindcss: [ '4.1.11' ]
+24 silly audit }
+25 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 256ms
+26 silly audit report {}
+27 verbose exit 0
+28 info ok
